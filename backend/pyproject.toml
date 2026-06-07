@@ -2,7 +2,6 @@
 name = "ai-film-studio-backend"
 version = "0.1.0"
 description = "AI 影视创作平台后端：剧本 + 人物 -> 自动出图 -> 图生视频"
-readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "fastapi>=0.115",
@@ -17,5 +16,9 @@ dependencies = [
     "python-dotenv>=1.0",
 ]
 
-[tool.uv]
-package = false
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["app", "app.providers"]
