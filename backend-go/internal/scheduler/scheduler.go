@@ -13,16 +13,29 @@ import (
 	"github.com/zuozuo0320/ai-film-studio/backend-go/internal/storage"
 )
 
+// Locker 分布式锁抽象：多副本部署时保证单活组装批次。
+type Locker interface {
+	TryAcquire(ctx context.Context) bool
+	Release(ctx context.Context)
+}
+
 type Scheduler struct {
 	store     storage.Store
 	q         queue.Queue
 	interval  time.Duration
 	maxImages int
 	model     string
+	lock      Locker // 可选
 }
 
 func New(store storage.Store, q queue.Queue, interval time.Duration, maxImages int, model string) *Scheduler {
 	return &Scheduler{store: store, q: q, interval: interval, maxImages: maxImages, model: model}
+}
+
+// WithLock 注入分布式锁（如 Redis）。
+func (s *Scheduler) WithLock(l Locker) *Scheduler {
+	s.lock = l
+	return s
 }
 
 // Run 阻塞运行，直到 ctx 取消。
@@ -42,6 +55,14 @@ func (s *Scheduler) Run(ctx context.Context) {
 
 // AssembleOnce 立即执行一次批次组装（也暴露给 API 做"立即出图"调试入口）。
 func (s *Scheduler) AssembleOnce() {
+	if s.lock != nil {
+		ctx := context.Background()
+		if !s.lock.TryAcquire(ctx) {
+			slog.Info("scheduler: another instance holds the lock, skipping window")
+			return
+		}
+		defer s.lock.Release(ctx)
+	}
 	projects, err := s.store.ListProjects()
 	if err != nil {
 		slog.Error("scheduler: list projects failed", "err", err)

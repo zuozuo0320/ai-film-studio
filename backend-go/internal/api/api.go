@@ -2,6 +2,7 @@
 package api
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -17,16 +18,30 @@ import (
 	"github.com/zuozuo0320/ai-film-studio/backend-go/internal/ws"
 )
 
-type Server struct {
-	store storage.Store
-	q     queue.Queue
-	hub   *ws.Hub
-	sched *scheduler.Scheduler
-	data  string
+// QuotaCounter 配额计数抽象（Redis 原子 INCR 实现）。
+type QuotaCounter interface {
+	Incr(ctx context.Context, scope, id string, n int64) (int64, error)
 }
 
-func NewServer(store storage.Store, q queue.Queue, hub *ws.Hub, sched *scheduler.Scheduler, dataDir string) *Server {
+type Server struct {
+	store      storage.Store
+	q          queue.Queue
+	hub        ws.Bus
+	sched      *scheduler.Scheduler
+	data       string
+	quota      QuotaCounter // 可选
+	quotaLimit int64        // 每项目每日出图上限，0=不限
+}
+
+func NewServer(store storage.Store, q queue.Queue, hub ws.Bus, sched *scheduler.Scheduler, dataDir string) *Server {
 	return &Server{store: store, q: q, hub: hub, sched: sched, data: dataDir}
+}
+
+// WithQuota 注入配额计数器（如 Redis）。
+func (s *Server) WithQuota(qc QuotaCounter, dailyLimit int64) *Server {
+	s.quota = qc
+	s.quotaLimit = dailyLimit
+	return s
 }
 
 func (s *Server) Router() *gin.Engine {
@@ -193,6 +208,17 @@ func (s *Server) enqueueImage(c *gin.Context) {
 	if shot == nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "shot not found"})
 		return
+	}
+	if s.quota != nil && s.quotaLimit > 0 {
+		used, err := s.quota.Incr(c.Request.Context(), "project_images", p.ID, 1)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		if used > s.quotaLimit {
+			c.JSON(http.StatusTooManyRequests, gin.H{"error": "今日出图配额已用完", "limit": s.quotaLimit})
+			return
+		}
 	}
 	shot.Status = models.ShotQueued
 	shot.Error = ""

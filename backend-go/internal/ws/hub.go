@@ -1,8 +1,15 @@
-// Package ws 进度事件 Hub：worker 发布事件，WebSocket/轮询客户端订阅。
-// 生产环境此处为 Redis Pub/Sub + 独立 ws-gateway（见架构文档 4.4）。
+// Package ws 进度事件总线：worker 发布事件，WebSocket/轮询客户端订阅。
+// Hub 为进程内实现；多实例部署用 RedisBus（Redis Pub/Sub，见架构文档 4.4）。
 package ws
 
 import "sync"
+
+// Bus 事件总线抽象。
+type Bus interface {
+	// Subscribe 返回事件 channel 与取消函数。projectID 为空表示订阅全部。
+	Subscribe(projectID string) (<-chan Event, func())
+	Publish(e Event)
+}
 
 // Event 生成进度事件，推送给前端。
 type Event struct {
