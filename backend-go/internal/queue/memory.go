@@ -6,6 +6,11 @@ import (
 	"sync"
 )
 
+// Deduper 幂等去重抽象：默认进程内 map，多实例部署注入 Redis 实现。
+type Deduper interface {
+	FirstSeen(taskID string) bool
+}
+
 // Memory 基于 channel 的进程内队列，带 worker 并发消费与幂等去重。
 type Memory struct {
 	mu       sync.Mutex
@@ -16,6 +21,7 @@ type Memory struct {
 	wg       sync.WaitGroup
 	workers  int
 	bufferSz int
+	deduper  Deduper // 可选，为 nil 时用进程内 seen map
 }
 
 func NewMemory(workersPerTopic int) *Memory {
@@ -24,6 +30,12 @@ func NewMemory(workersPerTopic int) *Memory {
 		topics: map[string]chan Message{}, seen: map[string]struct{}{},
 		ctx: ctx, cancel: cancel, workers: workersPerTopic, bufferSz: 1024,
 	}
+}
+
+// WithDeduper 注入外部幂等去重器（如 Redis）。
+func (m *Memory) WithDeduper(d Deduper) *Memory {
+	m.deduper = d
+	return m
 }
 
 func (m *Memory) ch(topic string) chan Message {
@@ -71,6 +83,9 @@ func (m *Memory) Subscribe(topic string, h Handler) {
 func (m *Memory) firstSeen(taskID string) bool {
 	if taskID == "" {
 		return true
+	}
+	if m.deduper != nil {
+		return m.deduper.FirstSeen(taskID)
 	}
 	m.mu.Lock()
 	defer m.mu.Unlock()

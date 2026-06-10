@@ -18,6 +18,9 @@ type Config struct {
 	KlingAccessKey     string
 	KlingSecretKey     string
 	QueueWorkersPerTop int
+	DatabaseURL        string // 留空则内存存储
+	RedisAddr          string // 留空则进程内 Hub/锁/去重
+	QuotaDailyImages   int64  // 每项目每日出图配额（0=不限，需 Redis）
 }
 
 func envStr(key, def string) string {
@@ -48,5 +51,8 @@ func Load() Config {
 		KlingAccessKey:     os.Getenv("KLING_ACCESS_KEY"),
 		KlingSecretKey:     os.Getenv("KLING_SECRET_KEY"),
 		QueueWorkersPerTop: envInt("QUEUE_WORKERS", 4),
+		DatabaseURL:        os.Getenv("DATABASE_URL"),
+		RedisAddr:          os.Getenv("REDIS_ADDR"),
+		QuotaDailyImages:   int64(envInt("QUOTA_DAILY_IMAGES", 0)),
 	}
 }

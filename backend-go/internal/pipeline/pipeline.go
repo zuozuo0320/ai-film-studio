@@ -19,7 +19,7 @@ import (
 
 type Pipeline struct {
 	store    storage.Store
-	hub      *ws.Hub
+	hub      ws.Bus
 	llm      provider.LLM
 	image    provider.Image
 	video    provider.Video
@@ -27,7 +27,7 @@ type Pipeline struct {
 	videoSec int
 }
 
-func New(store storage.Store, hub *ws.Hub, llm provider.LLM, img provider.Image, vid provider.Video, dataDir string, videoSec int) *Pipeline {
+func New(store storage.Store, hub ws.Bus, llm provider.LLM, img provider.Image, vid provider.Video, dataDir string, videoSec int) *Pipeline {
 	return &Pipeline{store: store, hub: hub, llm: llm, image: img, video: vid, dataDir: dataDir, videoSec: videoSec}
 }
 
