@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { App as AntdApp, Button, Card, Input, Space, Typography, Upload } from "antd";
-import { ThunderboltOutlined, UploadOutlined } from "@ant-design/icons";
+import { App as AntdApp, Button, Card, Input, Progress, Typography, Upload } from "antd";
+import { FileTextOutlined, ThunderboltOutlined, UploadOutlined } from "@ant-design/icons";
 import { api } from "../../shared/api/client";
 import type { Project } from "../../shared/api/types";
 
@@ -39,10 +39,18 @@ export function ScriptPanel({ project }: { project: Project }) {
     },
     onError: (e: Error) => message.error(e.message),
   });
+  const scriptLength = script.trim().length;
+  const canAnalyze = scriptLength > 0;
 
   return (
     <Card
-      title="剧本"
+      className="studio-panel"
+      title={
+        <span className="panel-title">
+          <FileTextOutlined />
+          剧本
+        </span>
+      }
       size="small"
       extra={
         <Upload
@@ -54,34 +62,46 @@ export function ScriptPanel({ project }: { project: Project }) {
             return false;
           }}
         >
-          <Button size="small" icon={<UploadOutlined />}>
+          <Button icon={<UploadOutlined />}>
             上传剧本
           </Button>
         </Upload>
       }
     >
+      <div className="progress-strip">
+        <div>
+          <div className="progress-strip-label">剧本准备度</div>
+          <Progress
+            percent={Math.min(100, Math.round(scriptLength / 8))}
+            showInfo={false}
+            strokeColor="#1e6f64"
+            trailColor="#e7ece8"
+          />
+        </div>
+        <Typography.Text type="secondary">{scriptLength} 字</Typography.Text>
+      </div>
       <Input.TextArea
-        rows={14}
+        className="script-editor"
         value={script}
         onChange={(e) => setScript(e.target.value)}
         placeholder="在此粘贴/编写剧本，用空行分隔不同场景或镜头…"
       />
-      <Space style={{ marginTop: 12 }}>
+      <div className="panel-actions">
         <Button loading={saveMut.isPending} onClick={() => saveMut.mutate(script)}>
           保存剧本
         </Button>
         <Button
           type="primary"
           icon={<ThunderboltOutlined />}
-          disabled={!script.trim()}
+          disabled={!canAnalyze}
           loading={analyzeMut.isPending || analyzing}
           onClick={() => analyzeMut.mutate()}
         >
           AI 分析 → 生成分镜
         </Button>
-      </Space>
+      </div>
       {project.shots.length > 0 && (
-        <Typography.Paragraph type="secondary" style={{ marginTop: 8, marginBottom: 0 }}>
+        <Typography.Paragraph className="panel-note">
           重新分析会覆盖现有 {project.shots.length} 个分镜。
         </Typography.Paragraph>
       )}

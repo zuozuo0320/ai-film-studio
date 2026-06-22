@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Badge, Button, Layout, Result, Spin, Typography } from "antd";
+import { Badge, Button, Layout, Result, Skeleton, Space, Typography } from "antd";
 import { ArrowLeftOutlined, HistoryOutlined } from "@ant-design/icons";
 import { Link, useParams } from "react-router-dom";
 import { api } from "../../shared/api/client";
@@ -30,7 +30,21 @@ export function WorkbenchPage() {
   });
 
   if (isLoading) {
-    return <Spin size="large" style={{ display: "block", margin: "120px auto" }} />;
+    return (
+      <Layout className="workbench-page">
+        <Layout.Header className="workbench-header">
+          <Skeleton.Button active style={{ width: 40 }} />
+          <Skeleton.Input active style={{ width: 260 }} />
+        </Layout.Header>
+        <Layout.Content className="workbench-content">
+          <div className="workbench-grid">
+            <Skeleton active paragraph={{ rows: 8 }} />
+            <Skeleton active paragraph={{ rows: 10 }} />
+            <Skeleton active paragraph={{ rows: 8 }} />
+          </div>
+        </Layout.Content>
+      </Layout>
+    );
   }
   if (error || !project) {
     return (
@@ -45,30 +59,51 @@ export function WorkbenchPage() {
       />
     );
   }
+  const doneCount = project.shots.filter((s) => s.status === "done").length;
+  const runningCount = project.shots.filter((s) =>
+    ["queued", "image_running", "video_running"].includes(s.status),
+  ).length;
 
   return (
-    <Layout style={{ minHeight: "100vh" }}>
-      <Layout.Header style={{ display: "flex", alignItems: "center", gap: 12 }}>
+    <Layout className="workbench-page">
+      <Layout.Header className="workbench-header">
         <Link to="/">
-          <Button type="text" icon={<ArrowLeftOutlined />} style={{ color: "#fff" }} />
+          <Button
+            aria-label="返回项目列表"
+            type="text"
+            icon={<ArrowLeftOutlined />}
+            style={{ color: "#fff" }}
+          />
         </Link>
-        <Typography.Title level={5} style={{ color: "#fff", margin: 0, flex: 1 }}>
-          {project.title}
-        </Typography.Title>
-        <Badge
-          status={connected ? "success" : "warning"}
-          text={
-            <span style={{ color: "rgba(255,255,255,.75)" }}>
-              {connected ? "实时连接" : "轮询模式"}
-            </span>
-          }
-        />
-        <Button icon={<HistoryOutlined />} onClick={() => setDrawerOpen(true)}>
-          批次进度
-        </Button>
+        <div className="workbench-title-block">
+          <div className="workbench-title-row">
+            <Typography.Title level={5} className="workbench-title">
+              {project.title}
+            </Typography.Title>
+          </div>
+          <div className="workbench-subtitle">
+            {project.shots.length} 个分镜 · {project.characters.length} 个角色 · {doneCount} 个已完成
+          </div>
+        </div>
+        <div className="workbench-actions">
+          <Badge
+            status={connected ? "success" : "warning"}
+            text={
+              <span style={{ color: "rgba(255,255,255,.75)" }}>
+                {connected ? "实时连接" : "轮询模式"}
+              </span>
+            }
+          />
+          <Space size={8} wrap>
+            {runningCount > 0 && <Badge count={runningCount} style={{ backgroundColor: "#e5b547" }} />}
+            <Button icon={<HistoryOutlined />} onClick={() => setDrawerOpen(true)}>
+              批次进度
+            </Button>
+          </Space>
+        </div>
       </Layout.Header>
 
-      <Layout.Content>
+      <Layout.Content className="workbench-content">
         <div className="workbench-grid">
           <ScriptPanel project={project} />
           <Storyboard project={project} />

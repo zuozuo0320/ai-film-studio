@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { Drawer, Empty, List, Tag, Typography } from "antd";
+import { ClockCircleOutlined } from "@ant-design/icons";
+import { Drawer, Empty, List, Space, Tag, Typography } from "antd";
 import { api } from "../../shared/api/client";
 import type { BatchStatus } from "../../shared/api/types";
 
@@ -28,7 +29,7 @@ export function BatchDrawer({
   });
 
   return (
-    <Drawer title="批次进度中心" open={open} onClose={onClose} width={420}>
+    <Drawer title="批次进度中心" open={open} onClose={onClose} width={460}>
       <Typography.Paragraph type="secondary">
         入队的分镜会在下个批次窗口（默认 10 分钟）统一出图。
       </Typography.Paragraph>
@@ -36,21 +37,29 @@ export function BatchDrawer({
         <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无出图批次" />
       ) : (
         <List
+          className="batch-list"
           dataSource={batches}
           renderItem={(b) => (
             <List.Item>
               <List.Item.Meta
                 title={
-                  <>
+                  <Space size={8} wrap>
                     <Tag color={BATCH_COLOR[b.status]}>{b.status}</Tag>
-                    {b.shot_ids.length} 个分镜 · {b.model}
-                  </>
+                    <Typography.Text strong>{b.shot_ids.length} 个分镜</Typography.Text>
+                    <Typography.Text type="secondary">{b.model}</Typography.Text>
+                  </Space>
                 }
                 description={
-                  <>
-                    创建：{new Date(b.created_at).toLocaleString()}
-                    {b.finished_at && <> · 完成：{new Date(b.finished_at).toLocaleString()}</>}
-                  </>
+                  <Space direction="vertical" size={2}>
+                    <Typography.Text type="secondary">
+                      <ClockCircleOutlined /> 创建：{new Date(b.created_at).toLocaleString()}
+                    </Typography.Text>
+                    {b.finished_at && (
+                      <Typography.Text type="secondary">
+                        完成：{new Date(b.finished_at).toLocaleString()}
+                      </Typography.Text>
+                    )}
+                  </Space>
                 }
               />
             </List.Item>

@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { ConfigProvider, App as AntdApp } from "antd";
+import { ConfigProvider, App as AntdApp, theme } from "antd";
 import zhCN from "antd/locale/zh_CN";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { ProjectListPage } from "../features/project/ProjectListPage";
@@ -18,7 +18,41 @@ const router = createBrowserRouter([
 
 export function App() {
   return (
-    <ConfigProvider locale={zhCN}>
+    <ConfigProvider
+      locale={zhCN}
+      theme={{
+        algorithm: theme.defaultAlgorithm,
+        token: {
+          colorPrimary: "#1e6f64",
+          colorSuccess: "#2f855a",
+          colorWarning: "#b7791f",
+          colorError: "#c2413d",
+          colorInfo: "#1e6f64",
+          colorText: "#171717",
+          colorTextSecondary: "#5f6360",
+          colorBgLayout: "#f4f6f5",
+          colorBgContainer: "#ffffff",
+          colorBorder: "#dde3df",
+          borderRadius: 8,
+          controlHeight: 38,
+          fontFamily:
+            "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif",
+        },
+        components: {
+          Button: {
+            borderRadius: 7,
+            controlHeight: 38,
+            primaryShadow: "none",
+          },
+          Card: {
+            borderRadiusLG: 8,
+          },
+          Modal: {
+            borderRadiusLG: 8,
+          },
+        },
+      }}
+    >
       <AntdApp>
         <QueryClientProvider client={queryClient}>
           <RouterProvider router={router} />

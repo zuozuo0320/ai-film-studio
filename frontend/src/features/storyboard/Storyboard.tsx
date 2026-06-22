@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { App as AntdApp, Button, Card, Empty, Space, Typography } from "antd";
-import { PictureOutlined } from "@ant-design/icons";
+import { App as AntdApp, Button, Card, Empty, Progress, Space, Typography } from "antd";
+import { AppstoreOutlined, PictureOutlined } from "@ant-design/icons";
 import { api } from "../../shared/api/client";
 import type { Project } from "../../shared/api/types";
 import { ShotCard } from "./ShotCard";
@@ -9,6 +9,7 @@ export function Storyboard({ project }: { project: Project }) {
   const { message } = AntdApp.useApp();
   const qc = useQueryClient();
   const doneCount = project.shots.filter((s) => s.status === "done").length;
+  const progress = project.shots.length ? Math.round((doneCount / project.shots.length) * 100) : 0;
 
   const enqueueAllMut = useMutation({
     mutationFn: async () => {
@@ -29,13 +30,21 @@ export function Storyboard({ project }: { project: Project }) {
 
   return (
     <Card
+      className="studio-panel"
       size="small"
-      title={`分镜故事板（${doneCount}/${project.shots.length} 完成）`}
+      title={
+        <span className="panel-title">
+          <AppstoreOutlined />
+          分镜故事板
+          <span className="panel-count">
+            {doneCount}/{project.shots.length}
+          </span>
+        </span>
+      }
       extra={
         project.shots.length > 0 && (
-          <Space>
+          <Space className="storyboard-toolbar">
             <Button
-              size="small"
               icon={<PictureOutlined />}
               loading={enqueueAllMut.isPending}
               onClick={() => enqueueAllMut.mutate()}
@@ -46,6 +55,20 @@ export function Storyboard({ project }: { project: Project }) {
         )
       }
     >
+      {project.shots.length > 0 && (
+        <div className="progress-strip">
+          <div>
+            <div className="progress-strip-label">成片进度</div>
+            <Progress
+              percent={progress}
+              showInfo={false}
+              strokeColor="#1e6f64"
+              trailColor="#e7ece8"
+            />
+          </div>
+          <Typography.Text type="secondary">{progress}%</Typography.Text>
+        </div>
+      )}
       {project.shots.length === 0 ? (
         <Empty
           image={Empty.PRESENTED_IMAGE_SIMPLE}

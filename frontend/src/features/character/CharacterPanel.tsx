@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { App as AntdApp, Avatar, Button, Card, Empty, Form, Input, List, Modal } from "antd";
-import { PlusOutlined, UserOutlined } from "@ant-design/icons";
+import { App as AntdApp, Avatar, Button, Card, Empty, Form, Input, List, Modal, Typography } from "antd";
+import { PlusOutlined, TeamOutlined, UserOutlined } from "@ant-design/icons";
 import { api } from "../../shared/api/client";
 import type { Project } from "../../shared/api/types";
 
@@ -31,18 +31,33 @@ export function CharacterPanel({ project }: { project: Project }) {
 
   return (
     <Card
-      title={`角色（${project.characters.length}）`}
+      className="studio-panel"
+      title={
+        <span className="panel-title">
+          <TeamOutlined />
+          角色
+          <span className="panel-count">{project.characters.length}</span>
+        </span>
+      }
       size="small"
       extra={
-        <Button size="small" icon={<PlusOutlined />} onClick={() => setOpen(true)}>
+        <Button icon={<PlusOutlined />} onClick={() => setOpen(true)}>
           添加
         </Button>
       }
     >
       {project.characters.length === 0 ? (
-        <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="先添加角色，出图时保持人物一致性" />
+        <Empty
+          image={Empty.PRESENTED_IMAGE_SIMPLE}
+          description="先添加角色，出图时保持人物一致性"
+        >
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => setOpen(true)}>
+            添加角色
+          </Button>
+        </Empty>
       ) : (
         <List
+          className="character-list"
           itemLayout="horizontal"
           dataSource={project.characters}
           renderItem={(c) => (
@@ -56,7 +71,11 @@ export function CharacterPanel({ project }: { project: Project }) {
                   )
                 }
                 title={c.name}
-                description={c.description || "（无描述）"}
+                description={
+                  <Typography.Paragraph className="character-description" ellipsis={{ rows: 2 }}>
+                    {c.description || "（无描述）"}
+                  </Typography.Paragraph>
+                }
               />
             </List.Item>
           )}

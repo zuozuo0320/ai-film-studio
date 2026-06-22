@@ -9,14 +9,14 @@ import {
 import { api, mediaUrl } from "../../shared/api/client";
 import type { Character, Project, Shot, ShotStatus } from "../../shared/api/types";
 
-const STATUS_META: Record<ShotStatus, { text: string; color: string }> = {
-  pending: { text: "待出图", color: "default" },
-  queued: { text: "已入队（等批次窗口）", color: "blue" },
-  image_running: { text: "出图中…", color: "processing" },
-  image_review: { text: "待确认图片", color: "gold" },
-  video_running: { text: "视频生成中…", color: "processing" },
-  done: { text: "完成", color: "success" },
-  failed: { text: "失败", color: "error" },
+const STATUS_META: Record<ShotStatus, { text: string; color: string; tagColor: string }> = {
+  pending: { text: "待出图", color: "default", tagColor: "default" },
+  queued: { text: "已入队", color: "blue", tagColor: "blue" },
+  image_running: { text: "出图中", color: "processing", tagColor: "processing" },
+  image_review: { text: "待确认", color: "gold", tagColor: "gold" },
+  video_running: { text: "视频中", color: "processing", tagColor: "processing" },
+  done: { text: "完成", color: "success", tagColor: "success" },
+  failed: { text: "失败", color: "error", tagColor: "error" },
 };
 
 export function ShotCard({ project, shot }: { project: Project; shot: Shot }) {
@@ -54,23 +54,39 @@ export function ShotCard({ project, shot }: { project: Project; shot: Shot }) {
 
   return (
     <Badge.Ribbon text={meta.text} color={meta.color}>
-      <Card size="small" title={`#${shot.index + 1} ${shot.summary}`}>
+      <Card
+        className="shot-card"
+        size="small"
+        title={
+          <span className="shot-card-title">
+            <span className="shot-index">#{shot.index + 1}</span>
+            <span className="shot-summary">{shot.summary}</span>
+          </span>
+        }
+      >
         <div className="shot-image-wrap">
           {shot.video_path ? (
             <video src={mediaUrl(shot.video_path)} controls preload="metadata" />
           ) : shot.image_path ? (
             <img src={mediaUrl(shot.image_path)} alt={shot.summary} loading="lazy" />
           ) : running ? (
-            <LoadingOutlined style={{ fontSize: 28, color: "#999" }} />
+            <span className="shot-placeholder">
+              <LoadingOutlined style={{ fontSize: 28 }} />
+              {shot.status === "video_running" ? "视频生成中" : "图片生成中"}
+            </span>
           ) : (
-            <PictureOutlined style={{ fontSize: 28, color: "#ccc" }} />
+            <span className="shot-placeholder">
+              <PictureOutlined style={{ fontSize: 28 }} />
+              等待生成画面
+            </span>
           )}
         </div>
 
         {/* 关键词 chips：图片下方展示 */}
-        <Space size={[4, 4]} wrap style={{ marginTop: 8 }}>
+        <Space className="shot-tags" size={[4, 4]} wrap>
+          <Tag color={meta.tagColor}>{meta.text}</Tag>
           {shot.keywords.map((k) => (
-            <Tag key={k} color="purple">
+            <Tag key={k} color="geekblue">
               {k}
             </Tag>
           ))}
@@ -82,15 +98,14 @@ export function ShotCard({ project, shot }: { project: Project; shot: Shot }) {
         </Space>
 
         {shot.error && (
-          <Typography.Paragraph type="danger" style={{ margin: "8px 0 0" }}>
+          <Typography.Paragraph className="shot-error" type="danger">
             {shot.error}
           </Typography.Paragraph>
         )}
 
-        <Space style={{ marginTop: 10 }}>
+        <div className="shot-actions">
           <Tooltip title="加入批次队列，等下个批次窗口统一出图">
             <Button
-              size="small"
               icon={<PictureOutlined />}
               loading={enqueueMut.isPending}
               disabled={shot.status === "queued" || running}
@@ -101,7 +116,6 @@ export function ShotCard({ project, shot }: { project: Project; shot: Shot }) {
           </Tooltip>
           <Tooltip title="确认图片（质量关卡）后生成视频">
             <Button
-              size="small"
               type="primary"
               icon={shot.status === "image_review" ? <CheckOutlined /> : <PlayCircleOutlined />}
               loading={approveMut.isPending || shot.status === "video_running"}
@@ -111,7 +125,7 @@ export function ShotCard({ project, shot }: { project: Project; shot: Shot }) {
               {shot.status === "done" ? "重新生成视频" : "确认图片 → 生成视频"}
             </Button>
           </Tooltip>
-        </Space>
+        </div>
       </Card>
     </Badge.Ribbon>
   );

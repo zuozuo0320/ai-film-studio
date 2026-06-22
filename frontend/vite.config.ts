@@ -12,4 +12,15 @@ export default defineConfig({
       "/ws": { target: "ws://127.0.0.1:8080", ws: true },
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          react: ["react", "react-dom", "react-router-dom"],
+          antd: ["antd", "@ant-design/icons"],
+          query: ["@tanstack/react-query"],
+        },
+      },
+    },
+  },
 });
